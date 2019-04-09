@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <title>sample</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+        html,
+        body {
+            font-family:'Arial',YuGothic,'Yu Gothic','Hiragino Kaku Gothic ProN','ヒラギノ角ゴ ProN W3','メイリオ', Meiryo,'ＭＳ ゴシック',sans-serif;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map{
+            float: left;
+            height: 60%;
+            width: 100%;
+        }
+        #randomNumber{
+            color:red;
+            font-size:40px;
+        }
+        #sum{
+            float:right;
+            color:blue
+        }
+        #height{
+            color:orange
+        }
+        
+        
+        
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="css/sweetalert2.css">
+    <script src="js/sweetalert2.min.js"></script>
+</head>
+
+<body>
+    <h1 id="random"></h1>
+    <div id="map"></div>
+    
+    <div id="count"></div>
+    <ul>
+        
+        <li>経度:
+            <span id="lat"></span>
+        </li>
+        <li>緯度:
+            <span id="lng"></span>
+        </li>
+        <li>標高:
+            <span id="height"></span>
+        </li>
+    </ul>
+    
+    <h1 id="sum">現在の合計値：</h1>
+    <script>
+        function getRandomInt(min, max) {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+        }
+        var random=getRandomInt(10000,-10000)
+        $("#random").append(`地図をクリックしてその地点の標高の合計を<span id="randomNumber">${random}</span>ｍに近づけよう`)
+        function initMap() {
+            // マップの初期化
+            var map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 2,
+                center: { lat: 19.89804136658624, lng: 137.67215152002814 },
+                styles: [{
+                    stylers: [
+                        {
+                            hue: '#999933' // 色相
+                        }, {
+                            saturation: 10 // 彩度
+                        }, {
+                            lightness: 30 // 明度
+                        }, {
+                            gamma: 0.5 // ガンマ
+                        }
+                    ]
+                }]
+            });
+            
+            // クリックイベントを追加
+            map.addListener('click', function (e) {
+                getClickLatLng(e.latLng, map);
+            });
+            
+        }
+        var heightArray=[]
+        var count=1;
+
+        var heightTotal=0;
+        
+        function getClickLatLng(lat_lng, map) {
+
+            // 座標を表示
+            document.getElementById('lat').textContent = lat_lng.lat();
+            document.getElementById('lng').textContent = lat_lng.lng();
+
+            // マーカーを設置
+            var marker = new google.maps.Marker({
+                position: lat_lng,
+                map: map,
+                label: {
+                    text: `${count}`,
+                    color: 'white',
+
+                }
+                
+            });
+            
+            elevator = new google.maps.ElevationService();
+            displayLocationElevation(lat_lng, elevator);
+            console.log(count)
+            count++;
+        }
+        
+        function displayLocationElevation(location, elevator) {
+                // Initiate the location request
+                elevator.getElevationForLocations({
+                    'locations': [location]
+                }, function (results, status) {
+                    
+                    console.log(results)
+                    if (status === 'OK') {
+                        // Retrieve the first result
+                        if (results[0]) {
+                            // Open the infowindow indicating the elevation at the clicked position.
+                            console.log('標高:' +results[0].elevation+'m')
+                            $("#height").html(results[0].elevation)
+                            heightArray.push(results[0].elevation)
+                            heightTotal=0;
+                            for (var i = 0; i < heightArray.length; i++) {
+                                heightTotal += heightArray[i];
+                            }
+                            
+                            $("#sum").html(`現在の合計：${heightTotal}`)
+                            if (heightTotal > random - 300 && heightTotal < random + 300) {
+                                
+                                swal({
+                                    title: `おめでとう！
+                                    ${count - 1}回目でクリアしました！`,
+                                }).then(function () {
+                                    // Redirect the user
+                                    window.location.href = "map.html";
+                                });
+                                
+                                
+                            }
+                        } else {
+                            console.log('No results found');
+                        }
+                    } else {
+                        console.log('Elevation service failed due to: ' + status);
+                    }
+                    
+                });
+            }
+            
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNb0gJuiT3RdRURKsn-oKNdufCYn7PAyo&callback=initMap" async defer></script>
+</body>
+
+</html>
